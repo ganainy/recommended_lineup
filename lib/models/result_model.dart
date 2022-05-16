@@ -1,5 +1,7 @@
 import 'package:recommended_lineup/models/player_model.dart';
 
+import 'club_model.dart';
+
 class ResultModel {
   var players = [];
   var clubs = [];
@@ -10,7 +12,7 @@ class ResultModel {
     });
 
     resultMap['clubs'].forEach((clubMap) {
-      // clubs.add(ClubModel.fromMap(clubMap));
+      clubs.add(ClubModel.fromMap(clubMap));
     });
   }
 }

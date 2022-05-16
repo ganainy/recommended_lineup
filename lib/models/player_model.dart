@@ -4,6 +4,7 @@ import 'avatar_urls_model.dart';
 
 class PlayerModel implements Comparable<PlayerModel> {
   var avgScore;
+  String? id;
   String? clubId;
   String? firstName;
   bool? injured;
@@ -15,6 +16,7 @@ class PlayerModel implements Comparable<PlayerModel> {
   bool? suspended;
 
   PlayerModel.fromMap(playerMap) {
+    id = playerMap['id'];
     avgScore = playerMap['avg_score'];
     clubId = playerMap['club_id'];
     firstName = playerMap['first_name'];
