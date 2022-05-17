@@ -4,47 +4,73 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:recommended_lineup/models/player_model.dart';
 import 'package:recommended_lineup/screens/home/home_controller.dart';
 
-import '../../components.dart';
-import '../../constants.dart';
 import '../../customization/my_theme.dart';
 import '../../models/download_status.dart';
+import '../../shared/components.dart';
+import '../../shared/constants.dart';
 
 class HomeScreen extends StatelessWidget {
   HomeScreen({Key? key}) : super(key: key);
 
   final HomeController homeController = Get.find<HomeController>();
 
+  late double maxHeight; // height of screen
+  late double maxWidth; // width of screen
+  late double
+      fieldHeight; // height of the field background that players show on
+  late double playerCardHeight; // height of player card
+  late double playerCardWidth; // width of player card
+
   @override
   Widget build(BuildContext context) {
-    return SafeArea(child: Scaffold(body: Obx(() {
-      return Column(
-        children: [
-          SizedBox(
-            height: Get.height - 180,
-            child: Stack(
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    image: DecorationImage(
-                      image: AssetImage("assets/images/field.png"),
-                      fit: BoxFit.fill,
-                    ),
+    return SafeArea(
+        child: Scaffold(
+            resizeToAvoidBottomInset: false, //dont resize when keyboard is open
+            body: LayoutBuilder(
+              builder: (context, constraints) {
+                maxHeight = constraints.maxHeight;
+                maxWidth = constraints.maxWidth;
+                fieldHeight = maxHeight * 0.8;
+                playerCardHeight = (fieldHeight / 4) - 16; /*margin*/
+                playerCardWidth = maxWidth / 5 - 16; /*margin*/
+
+                return SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      SizedBox(
+                        height: fieldHeight,
+                        child: Obx(() {
+                          return Stack(
+                            children: [
+                              buildFieldBackground(),
+                              homeController.downloadStatusObs.value ==
+                                      DownloadStatus.downloading
+                                  ? buildLoadingView()
+                                  : homeController.downloadStatusObs.value ==
+                                          DownloadStatus.error
+                                      ? buildErrorView()
+                                      : buildFormationView(context),
+                            ],
+                          );
+                        }),
+                      ),
+                      buildFormationSelector(context),
+                    ],
                   ),
-                ),
-                homeController.downloadStatusObs.value ==
-                        DownloadStatus.downloading
-                    ? buildLoadingView()
-                    : homeController.downloadStatusObs.value ==
-                            DownloadStatus.error
-                        ? buildErrorView()
-                        : buildFormationView(context),
-              ],
-            ),
-          ),
-          buildFormationSelector(context),
-        ],
-      );
-    })));
+                );
+              },
+            )));
+  }
+
+  Container buildFieldBackground() {
+    return Container(
+      decoration: const BoxDecoration(
+        image: DecorationImage(
+          image: AssetImage("assets/images/field.png"),
+          fit: BoxFit.fill,
+        ),
+      ),
+    );
   }
 
   Widget buildFormationView(BuildContext context) {
@@ -54,40 +80,28 @@ class HomeScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           //attackers row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ...homeController.topAttackersObs.value.map((player) {
-                return buildPlayerCard(player, context);
-              }).toList(),
-            ],
-          ),
+          buildFormationRow(context, homeController.topAttackersObs.value),
           //midfielders row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ...homeController.topMidfieldersObs.value.map((player) {
-                return buildPlayerCard(player, context);
-              }).toList(),
-            ],
-          ),
+          buildFormationRow(context, homeController.topMidfieldersObs.value),
           //defenders row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ...homeController.topDefendersObs.value.map((player) {
-                return buildPlayerCard(player, context);
-              }).toList(),
-            ],
-          ),
-          //goal keeper
+          buildFormationRow(context, homeController.topDefendersObs.value),
+          //goalkeeper
           buildPlayerCard(
               homeController.topGoalKeepersObs.value.elementAt(0), context),
         ],
       ),
+    );
+  }
+
+  Row buildFormationRow(BuildContext context, List<dynamic> players) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...players.map((player) {
+          return buildPlayerCard(player, context);
+        }).toList(),
+      ],
     );
   }
 
@@ -97,73 +111,80 @@ class HomeScreen extends StatelessWidget {
     return InkWell(
       onTap: () {
         homeController.setCaptain(player);
+        //show toast
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("${player?.lastName} has been set as captain"),
+        ));
       },
-      child: Column(
-        children: [
-          SizedBox(
-            width: 60,
-            height: 60,
-            child: Stack(
-              children: [
-                buildNetworkImage(imageUrl: playerClub?.jerseyUrl),
-                Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    '${player?.jerseyNumber}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headline5
-                        ?.copyWith(color: playerClub?.jerseyNumberColor),
+      child: Container(
+        width: playerCardWidth,
+        height: playerCardHeight,
+        child: Column(
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  buildNetworkImage(imageUrl: playerClub?.jerseyUrl),
+                  Align(
+                    alignment: Alignment.center,
+                    child: Text(
+                      '${player?.jerseyNumber}',
+                      style: Theme.of(context)
+                          .textTheme
+                          .headline5
+                          ?.copyWith(color: playerClub?.jerseyNumberColor),
+                    ),
                   ),
-                ),
-                homeController.isCaptain(player)
-                    ? Align(
-                        alignment: Alignment.topRight,
-                        child: Image.asset(
-                          'assets/images/captain.png',
-                          width: 25,
-                          height: 25,
-                        ),
-                      )
-                    : const SizedBox(),
-              ],
+                  homeController.isCaptain(player)
+                      ? Align(
+                          alignment: Alignment.topRight,
+                          child: Image.asset(
+                            'assets/images/captain.png',
+                            width: 25,
+                            height: 25,
+                          ),
+                        )
+                      : const SizedBox(),
+                ],
+              ),
             ),
-          ),
-          SizedBox(
-            width: 60,
-            child: Text(
-              '${player?.lastName}',
-              maxLines: 2,
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                  fontSize: 16,
-                  color: MyTheme.grey,
-                  height: 1.2,
-                  fontWeight: FontWeight.w700),
+            FittedBox(
+              child: Text(
+                '${player?.lastName}',
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 16,
+                    color: MyTheme.grey,
+                    height: 1.2,
+                    fontWeight: FontWeight.w700),
+              ),
             ),
-          ),
-          Text(
-            '${player?.avgScore + player?.previousMatch?.finalScore} Pts',
-            maxLines: 2,
-            textAlign: TextAlign.center,
-            overflow: TextOverflow.ellipsis,
-            style:
-                const TextStyle(fontSize: 14, color: MyTheme.grey, height: 1.2),
-          )
-        ],
+            FittedBox(
+              child: Text(
+                '${player?.avgScore + player?.previousMatch?.finalScore} Pts',
+                maxLines: 1,
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 14, color: MyTheme.grey, height: 1.2),
+              ),
+            )
+          ],
+        ),
       ),
     );
   }
 
   Widget buildFormationSelector(BuildContext context) {
     return SizedBox(
-      height: 110,
+      height: maxHeight - fieldHeight,
       child: Column(
         children: [
           Text('Select formation',
               style: Theme.of(context).textTheme.headline6),
-          Flexible(
+          Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: formations.length,
@@ -171,17 +192,26 @@ class HomeScreen extends StatelessWidget {
                 return InkWell(
                     onTap: () {
                       homeController.setFormation(formations[index]);
+                      //show toast
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                        content:
+                            Text("formation set to ${formations[index].name} "),
+                      ));
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
-                      child: Card(
-                          color: homeController
-                                  .isSelectedFormation(formations[index])
-                              ? Colors.green[200]
-                              : null,
-                          child: Container(
-                              margin: const EdgeInsets.all(8),
-                              child: Text(formations[index].name))),
+                      child: Obx(() {
+                        return AspectRatio(
+                          aspectRatio: 1,
+                          child: Card(
+                              color: homeController
+                                      .isSelectedFormation(formations[index])
+                                  ? Colors.green[200]
+                                  : null,
+                              child:
+                                  Center(child: Text(formations[index].name))),
+                        );
+                      }),
                     ));
               },
             ),

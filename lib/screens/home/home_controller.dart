@@ -3,26 +3,29 @@ import 'package:recommended_lineup/models/club_model.dart';
 import 'package:recommended_lineup/models/player_model.dart';
 import 'package:recommended_lineup/models/result_model.dart';
 
-import '../../constants.dart';
 import '../../models/download_status.dart';
 import '../../network/dio_helper.dart';
+import '../../shared/constants.dart';
 
 class HomeController extends GetxController {
   //used to show status of download
   var downloadStatusObs = Rxn<DownloadStatus>();
+  //lists for top players of each position
   var topGoalKeepersObs = [].obs;
   var topDefendersObs = [].obs;
   var topMidfieldersObs = [].obs;
   var topAttackersObs = [].obs;
-
+  //this field containts API response
   ResultModel? result;
-  FormationModel? selectedFormation;
+  //selected formation with default formation of formations[0] (4-3-3)
+  var selectedFormationObs = formations[0].obs;
+  //variable for saving captain id
   var captainIdObs = Rxn<String?>();
 
   @override
   void onInit() {
-    loadData(formations[0]); //this is the default formation
-    selectedFormation = formations[0];
+    loadData(selectedFormationObs.value);
+    getCaptainId();
   }
 
   void loadData(FormationModel formation) {
@@ -93,12 +96,14 @@ class HomeController extends GetxController {
   //change formation of players and load the new one
   void setFormation(FormationModel formation) {
     loadData(formation);
-    selectedFormation = formation;
+    selectedFormationObs.value = formation;
   }
 
   //set player as captain
   void setCaptain(PlayerModel? player) {
     captainIdObs.value = player?.id;
+    //save captain id to local storage
+    getStorage.write(captainId, player?.id);
   }
 
   //check if player is captain
@@ -108,6 +113,11 @@ class HomeController extends GetxController {
 
   //returns true if this formation is selected
   bool isSelectedFormation(FormationModel? formation) {
-    return selectedFormation == formation;
+    return selectedFormationObs.value == formation;
+  }
+
+  //get captain id from db if exists on app start
+  void getCaptainId() {
+    captainIdObs.value = getStorage.read(captainId);
   }
 }

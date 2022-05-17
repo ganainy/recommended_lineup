@@ -1,21 +1,17 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import 'customization/my_theme.dart';
+import '../customization/my_theme.dart';
 
 buildNetworkImage({
   required String? imageUrl,
-  double width = 70.0,
-  double height = 70.0,
 }) {
   return CachedNetworkImage(
     imageUrl: imageUrl ?? '',
     imageBuilder: (context, imageProvider) => Container(
-      width: width,
-      height: height,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        image: DecorationImage(image: imageProvider, fit: BoxFit.cover),
+        image: DecorationImage(image: imageProvider, fit: BoxFit.fill),
       ),
     ),
     placeholder: (context, url) => const SizedBox(

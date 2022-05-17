@@ -1,8 +1,14 @@
+import 'package:get_storage/get_storage.dart';
+
 const competitionId = 'competition_id';
 const attacker = 'attacker';
 const midfielder = 'midfielder';
 const defender = 'defender';
 const goalkeeper = 'goalkeeper';
+
+const captainId = 'captainId'; //key for captain id in database
+
+final getStorage = GetStorage();
 
 //assuming all formations follow this pattern (x-x-x)
 class FormationModel {

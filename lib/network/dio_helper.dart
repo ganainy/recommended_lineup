@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:dio/adapter.dart';
 import 'package:dio/dio.dart';
-import 'package:recommended_lineup/constants.dart';
+import 'package:recommended_lineup/shared/constants.dart';
 
 class DioHelper {
   static late Dio dio;
